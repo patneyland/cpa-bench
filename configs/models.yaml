@@ -12,8 +12,11 @@ models:
   - openai/gpt-5
   - google/gemini-2.5-pro
 
-# Who grades the open-ended (llm_judge) tasks. Use a strong model.
-judge: anthropic/claude-opus-4.5
+# Who grades the open-ended (llm_judge) tasks. Use a strong model — and keep
+# this in sync with whatever judge was last validated via `judge-eval`
+# (validate the judge you ship). claude-opus-4.8 scored 100% agreement / 0
+# false-pass on the 12-item synthetic seed; re-validate if you change it.
+judge: anthropic/claude-opus-4.8
 
 # Max concurrent in-flight requests.
 concurrency: 8
