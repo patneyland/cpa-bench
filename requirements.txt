@@ -1,0 +1,6 @@
+# CPA-Bench runtime dependencies.
+# The benchmark talks to every model through OpenRouter, which is an
+# OpenAI-compatible gateway — so we use the openai SDK pointed at OpenRouter.
+# One credential (OPENROUTER_API_KEY) reaches every model AND the judge.
+openai>=1.40.0
+PyYAML>=6.0

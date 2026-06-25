@@ -67,6 +67,55 @@ Each task is designed to test not just *can the model get the number*, but *can 
 
 ---
 
+## Running the benchmark (v0 harness)
+
+The evaluation harness lives in [`cpa_bench/`](cpa_bench/). You give it a list of
+models and a set of tasks, and it runs and scores them — reaching **every model,
+and the grader, through a single OpenRouter credential**. Each task is
+self-describing: it carries how it should be graded (`eval_method`), so the
+runner stays simple.
+
+```bash
+pip install -r requirements.txt
+export OPENROUTER_API_KEY=sk-or-...        # the only credential you need
+```
+
+**Testing protocol — built in, so you never fire a full run just to check plumbing:**
+
+```bash
+# 1. Full pipeline offline — no network, no key, no cost. Exercises the
+#    runner, every scorer, and the leaderboard via a mock client.
+python -m cpa_bench.cli run --tasks data/sample_tasks.jsonl --dry-run
+
+# 2. Cheap real smoke test — first 2 tasks against the real models/judge.
+python -m cpa_bench.cli run --tasks data/sample_tasks.jsonl --limit 2
+
+# 3. Full run.
+python -m cpa_bench.cli run --models configs/models.yaml \
+    --tasks data/sample_tasks.jsonl --out results/run-001
+
+# Offline unit tests (scorers + end-to-end):
+python tests/test_pipeline.py        # or: python -m pytest -q
+```
+
+Outputs land in the `--out` directory: `raw/<model>/<task>.json` (one record per
+call, so a crash loses nothing), `scores.jsonl`, and a `leaderboard.md` with
+accuracy and **real per-model cost** (OpenRouter reports usage cost per call).
+
+Configure the run in [`configs/models.yaml`](configs/models.yaml) — just the
+model list, the judge, and concurrency. Sample tasks in
+[`data/sample_tasks.jsonl`](data/sample_tasks.jsonl) already cover four grading
+methods (`numeric`, `exact`, `mcq`, `llm_judge`) across four accounting roles.
+
+**Roughly what a run costs.** Cost is dominated by how much context each task
+carries. Against the FinanceBench 150-question subset with the gold *evidence
+excerpt* supplied (~1.4K tokens of context each), a full run on an Opus-tier
+model (~$5/$25 per 1M input/output tokens) is on the order of **a few dollars**.
+Feeding entire source filings instead (long-context mode, ~100K tokens each)
+pushes the same run toward **$50–150**. Start with the cheap evidence mode while
+building the harness; the `--dry-run` and `--limit` modes above keep iteration
+free or near-free.
+
 ## Roadmap (high level)
 
 Detailed planning lives in [`PLAN.md`](PLAN.md) *(coming next)*. In brief:

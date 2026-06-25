@@ -1,0 +1,25 @@
+# CPA-Bench run configuration.
+#
+# Give it a list of models and say "go". Every model — and the judge — is
+# reached through a single OPENROUTER_API_KEY. Model strings are OpenRouter
+# IDs (provider/model). Find them at https://openrouter.ai/models
+#
+# Pricing note (as of this writing): Anthropic Opus-tier models bill about
+# $5 / 1M input tokens and $25 / 1M output tokens through OpenRouter.
+
+models:
+  - anthropic/claude-opus-4.5
+  - openai/gpt-5
+  - google/gemini-2.5-pro
+
+# Who grades the open-ended (llm_judge) tasks. Use a strong model.
+judge: anthropic/claude-opus-4.5
+
+# Max concurrent in-flight requests.
+concurrency: 8
+
+# Optional: override the per-task system prompt. Omit to use the default
+# in cpa_bench/config.py (which instructs the FINAL ANSWER: tag the scorers
+# parse). Keeping it here makes the run reproducible.
+# system_prompt: |
+#   You are taking an accounting and finance benchmark. ...

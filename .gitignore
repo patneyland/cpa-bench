@@ -13,8 +13,9 @@ env/
 /scratch/
 /vectorstores/
 
-# Model outputs (decide per-file what to version)
-/results/raw/
+# Run outputs (raw/, scores.jsonl, leaderboard.md). Publish curated results
+# deliberately elsewhere; don't commit every local run.
+/results/
 
 # OS / editor
 .DS_Store
