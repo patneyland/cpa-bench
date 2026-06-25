@@ -104,6 +104,7 @@ def cmd_judge_prep(args: argparse.Namespace) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
+    config.load_env()  # pull OPENROUTER_API_KEY from .env if present
     p = argparse.ArgumentParser(prog="cpa_bench", description="CPA-Bench evaluation harness")
     sub = p.add_subparsers(dest="command", required=True)
 

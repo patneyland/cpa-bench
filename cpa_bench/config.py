@@ -56,6 +56,33 @@ def load_tasks(path: str, limit: int | None = None) -> list[Task]:
     return tasks
 
 
+def load_env(path: str = ".env") -> None:
+    """Load KEY=VALUE pairs from a .env file into the environment if present.
+
+    Variables already set in the real environment are left untouched (so an
+    exported key always wins). Uses python-dotenv when installed, with a
+    minimal built-in fallback so the harness works even before dependencies
+    are installed."""
+    try:
+        from dotenv import load_dotenv  # type: ignore
+
+        load_dotenv(path, override=False)
+        return
+    except ImportError:
+        pass
+    if not os.path.exists(path):
+        return
+    with open(path, encoding="utf-8") as fh:
+        for line in fh:
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, _, val = line.partition("=")
+            key, val = key.strip(), val.strip().strip('"').strip("'")
+            if key and key not in os.environ:
+                os.environ[key] = val
+
+
 def openrouter_key(required: bool = True) -> str | None:
     key = os.environ.get("OPENROUTER_API_KEY")
     if required and not key:

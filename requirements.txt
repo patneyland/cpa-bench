@@ -4,3 +4,4 @@
 # One credential (OPENROUTER_API_KEY) reaches every model AND the judge.
 openai>=1.40.0
 PyYAML>=6.0
+python-dotenv>=1.0.0   # loads .env (the harness also has a zero-dep fallback)
