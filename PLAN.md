@@ -116,9 +116,17 @@ layer, correctly attributed and licensed.
 `llm_judge` score is only as credible as the judge behind it. This is its own phase
 because the agreement number is a headline trust metric, not an implementation detail.
 
+- [x] **Harness scaffolded.** [`cpa_bench/judge_eval.py`](cpa_bench/judge_eval.py) runs
+  the *deployed* judge (the same `judge_verdict` the benchmark uses) over a labeled set
+  and reports agreement, Cohen's κ, a confusion matrix, and **false-pass / false-fail**
+  rates, sliced by role and complexity. CLI: `judge-eval` (score a labeled set) and
+  `judge-prep` (turn a real run into a CPA labeling template). Seeded with a 12-item
+  synthetic labeled set ([`data/judge_eval_seed.jsonl`](data/judge_eval_seed.jsonl)) so it
+  runs today; offline tests check the metrics against hand-computed confusion matrices.
 - [ ] **Build a human-labeled validation set.** Sample model answers spanning the full
   outcome range (clearly right, clearly wrong, and borderline). Have one or more CPAs
-  label each as correct/incorrect, blind to the judge's verdict.
+  label each as correct/incorrect, blind to the judge's verdict. (`judge-prep` produces
+  the template; replace the synthetic seed with real model answers.)
 - [ ] **Measure agreement.** Compute judge-vs-CPA agreement (raw agreement and a
   chance-corrected statistic such as Cohen's κ). Break it out by `accounting_role` and
   `complexity` — the judge may be reliable on bookkeeping and shaky on ASC 606 judgment.

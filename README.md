@@ -116,9 +116,28 @@ pushes the same run toward **$50–150**. Start with the cheap evidence mode whi
 building the harness; the `--dry-run` and `--limit` modes above keep iteration
 free or near-free.
 
+**Validating the judge.** Open-ended (`llm_judge`) scores are only as trustworthy
+as the judge behind them, so the harness can grade the judge against human labels:
+
+```bash
+# Score the deployed judge on a labeled set -> agreement, Cohen's kappa,
+# confusion matrix, and the false-pass rate (how often it accepts a wrong answer).
+python -m cpa_bench.cli judge-eval --items data/judge_eval_seed.jsonl --out results/judge
+
+# Build a labeling template from a real run, for a CPA to mark correct/incorrect:
+python -m cpa_bench.cli judge-prep --run results/run-001/scores.jsonl \
+    --tasks data/cpa_bench_v0_1.jsonl --out data/judge_eval_to_label.jsonl
+```
+
+The seed set ([`data/judge_eval_seed.jsonl`](data/judge_eval_seed.jsonl)) is synthetic
+(answers whose correctness we know, including *subtly* wrong ones) so you can run it
+today; the real validation set is CPA-labeled real model answers (PLAN Phase 3). The
+metric that matters most is **false-pass** — a judge that rubber-stamps wrong answers
+silently inflates the leaderboard, so it's reported first.
+
 ## Roadmap (high level)
 
-Detailed planning lives in [`PLAN.md`](PLAN.md) *(coming next)*. In brief:
+Detailed planning lives in [`PLAN.md`](PLAN.md). In brief:
 
 1. **Setup & replication** — establish repo structure; bring in the FinanceBench open subset as a foundation and attribute it properly.
 2. **Accounting-specific dataset** — extend the schema (role, complexity, required reasoning, expected outputs) and build the first 100–300 expert-reviewed tasks across the layers above.

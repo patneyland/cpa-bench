@@ -98,21 +98,39 @@ JUDGE_SYSTEM = (
 )
 
 
-def score_llm_judge(task: Task, model_text: str, judge_client, judge_model: str) -> Score:
-    ans = extract_final_answer(model_text)
-    user = (
-        f"QUESTION:\n{task.question}\n\n"
-        f"GOLD ANSWER:\n{task.gold_answer}\n\n"
-        f"GOLD RATIONALE:\n{task.gold_rationale or '(none provided)'}\n\n"
-        f"CANDIDATE ANSWER:\n{ans}\n\n"
+def build_judge_prompt(question: str, gold_answer: str, gold_rationale: str, candidate: str) -> str:
+    return (
+        f"QUESTION:\n{question}\n\n"
+        f"GOLD ANSWER:\n{gold_answer}\n\n"
+        f"GOLD RATIONALE:\n{gold_rationale or '(none provided)'}\n\n"
+        f"CANDIDATE ANSWER:\n{candidate}\n\n"
         "Is the candidate correct? Reply CORRECT or INCORRECT."
     )
+
+
+def judge_verdict(
+    judge_client, judge_model: str, question: str, gold_answer: str,
+    gold_rationale: str, candidate: str,
+) -> tuple[bool, str]:
+    """Run the deployed judge on one (question, gold, candidate) and return
+    (is_correct, detail). This is the single source of truth for judging —
+    both the benchmark scorer and the validation harness call it, so the
+    judge we validate is exactly the judge we ship."""
+    user = build_judge_prompt(question, gold_answer, gold_rationale, candidate)
     result = judge_client.complete(judge_model, JUDGE_SYSTEM, user)
     if result.error:
-        return Score(False, f"judge error: {result.error}", ans)
+        return False, f"judge error: {result.error}"
     verdict = (result.text or "").strip().upper()
     ok = verdict.startswith("CORRECT")
-    return Score(ok, f"judge={result.text.strip()[:120]!r}", ans)
+    return ok, f"judge={(result.text or '').strip()[:160]!r}"
+
+
+def score_llm_judge(task: Task, model_text: str, judge_client, judge_model: str) -> Score:
+    ans = extract_final_answer(model_text)
+    ok, detail = judge_verdict(
+        judge_client, judge_model, task.question, task.gold_answer, task.gold_rationale, ans
+    )
+    return Score(ok, detail, ans)
 
 
 def score(task: Task, model_text: str, judge_client=None, judge_model: str = "") -> Score:
