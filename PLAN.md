@@ -209,6 +209,67 @@ This is intentionally later — it depends on a validated single-shot foundation
 
 ---
 
+## Additional components that should be considered
+
+Cross-cutting ideas that don't slot neatly into one phase — captured here so they
+aren't lost. Several feed Phase 5 reporting, but they're listed separately because
+they change *what the benchmark measures*, not just when. The throughline is **AI
+efficiency**: accuracy is necessary but not sufficient — the question a firm actually
+faces is how *efficiently* a model or framework reaches a correct answer.
+
+### Efficiency, not just accuracy — the cost–quality frontier
+
+Most benchmarks rank by accuracy and ignore cost. That leaves out the decision real
+firms make. CPA-Bench already captures the raw materials (per-call cost and token
+counts from OpenRouter usage); turning them into first-class metrics is a genuine
+competitive advantage for the benchmark itself.
+
+- [ ] **Report efficiency metrics next to accuracy:** cost per *correct* answer
+  ($/correct), tokens per task, accuracy-per-dollar, and latency / time-to-answer.
+  "96.9% at $0.13 vs 96.9% at $0.26" is the real decision, not a footnote.
+- [ ] **Publish the cost–quality frontier**, not a single-axis leaderboard — plot
+  accuracy against cost (and against latency) so the Pareto-efficient configurations
+  are visible. A cheaper model that ties a pricier one on accounting accuracy is the
+  headline.
+- [ ] **Effort / reasoning-budget sensitivity.** Where a model exposes a reasoning
+  effort knob, sweep it and show how accuracy *and* cost move together — locate the
+  point of diminishing returns per task type.
+
+### Agentic-framework efficiency (beyond single models)
+
+The same task can be attempted by a bare model or by an agentic scaffold (tool-use
+loop, planner, calculator/ledger tools). The interesting question isn't only "did it
+get it right" but **"how much did it spend — steps, tool calls, tokens, dollars,
+wall-clock — to get there, and was the scaffold worth it?"**
+
+- [ ] **Instrument agentic runs:** count tool calls, steps/turns, total tokens, cost,
+  and latency per task — not just the final verdict.
+- [ ] **Compare frameworks on identical tasks:** bare model vs. framework A vs.
+  framework B, reported on the efficiency frontier. Does the scaffold buy accuracy,
+  and at what cost multiple?
+- [ ] **"Efficiency of success."** Among *successful* completions, report the
+  distribution of cost/steps — succeeding cheaply and consistently beats succeeding
+  expensively. (Pairs with Phase 6's agentic layer.)
+
+### Reliability as an efficiency concern
+
+- [ ] **Consistency under repetition.** Run a task N times; report pass-rate and cost
+  variance. A model right 9/10 cheaply may beat one right 10/10 expensively — and a
+  model right only *sometimes* is both an efficiency and a trust problem. (Requires
+  deciding how scoring handles non-determinism.)
+
+### Why this is a competitive advantage
+
+- [ ] Position CPA-Bench around the **decision real firms face** — capability *per
+  unit cost* on real accounting work — rather than leaderboard bragging rights. It's
+  differentiated, hard to game, and directly useful to the profession the mission
+  serves.
+
+**Deliverable (when pursued):** an efficiency-aware results view — the cost–quality
+frontier plus per-task cost/step instrumentation — layered onto Phase 5 reporting.
+
+---
+
 ## Versioning & milestones
 
 | Version | Definition of done |
