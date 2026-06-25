@@ -6,6 +6,18 @@ CPA-Bench extends [FinanceBench](https://github.com/patronus-ai/financebench) be
 
 > **Status:** `v0.0` — pre-release. We are at the very beginning: defining the mission, the schema, and the first tasks. The repository structure, dataset, and evaluation harness are being built in the open. Nothing here is final, and contributions, critique, and collaboration are welcome.
 
+### ⚠️ Caveats — read before using or citing
+
+This is an early, in-progress project built in the open. Please don't treat anything here as a validated benchmark yet:
+
+- **The task gold answers are AI-authored and not yet expert-reviewed.** The current `v0.1` task set ([`data/cpa_bench_v0_1.jsonl`](data/cpa_bench_v0_1.jsonl)) was drafted by AI agents and arithmetic-checked, but **has not been reviewed or signed off by a CPA.** Some items involve genuine professional judgment (e.g. lease classification, ASC 606 timing, audit-risk calls) where a wrong gold label would corrupt scores. Treat it as a *draft to be reviewed*, not an answer key.
+- **The judge-validation labels are synthetic.** The judge-eval seed ([`data/judge_eval_seed.jsonl`](data/judge_eval_seed.jsonl)) uses answers whose correctness *we* assigned, not human-labeled real model outputs. The published human-vs-judge agreement number (the metric that makes `llm_judge` scores trustworthy) **does not exist yet** — see [`PLAN.md`](PLAN.md) Phase 3.
+- **No model results have been published.** The harness runs, but no leaderboard here reflects a real, reviewed run.
+- **FinanceBench is not yet incorporated.** It is the intended foundation, but its dataset is **CC BY-NC** and will be added only with proper attribution and licensing — see [Attribution](#attribution).
+- **Licensing is not finalized.** Until a `LICENSE` is added, default copyright applies. The *intent* is an open project; see [License](#license).
+
+In short: the **scaffolding and methodology are real and runnable**; the **dataset and results are not yet validated**. Contributions from accountants, auditors, and educators — especially gold-answer review — are exactly what this project needs.
+
 ---
 
 ## Mission
