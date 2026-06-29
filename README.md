@@ -1,186 +1,175 @@
 # CPA-Bench
 
-**An open benchmark for measuring how well AI performs the real work of accounting — so accountants can prepare for AI instead of hiding from it.**
+**An open benchmark measuring how well AI does the real work of accounting, so accountants can prepare for AI instead of avoiding it.**
 
-CPA-Bench extends [FinanceBench](https://github.com/patronus-ai/financebench) beyond open-book financial QA into the procedural, judgment-heavy, role-based work that accountants actually do: bookkeeping, period-end close, adjustments, reconciliations, GAAP/IFRS application, and audit-style reasoning.
+CPA-Bench extends [FinanceBench](https://github.com/patronus-ai/financebench) beyond open-book financial QA into the procedural, judgment-heavy work an accounting function actually performs: bookkeeping, period-end close, GAAP/IFRS application, revenue recognition, and audit-style reasoning. It grades models on those tasks, tracks what each run costs, and (the part most benchmarks skip) measures whether the AI grader can be trusted in the first place.
 
-> **Status:** `v0.0` — pre-release. We are at the very beginning: defining the mission, the schema, and the first tasks. The repository structure, dataset, and evaluation harness are being built in the open. Nothing here is final, and contributions, critique, and collaboration are welcome.
+> **Status: `v0.x`, pre-release.** The evaluation harness is built and tested end to end. There is no published real-model run yet, and the task gold answers have not been reviewed by a CPA. This is honest scaffolding, not a finished benchmark. Contributions, critique, and gold-answer review are exactly what the project needs.
 
-### ⚠️ Caveats — read before using or citing
-
-This is an early, in-progress project built in the open. Please don't treat anything here as a validated benchmark yet:
-
-- **The task gold answers are AI-authored and not yet expert-reviewed.** The current `v0.1` task set ([`data/cpa_bench_v0_1.jsonl`](data/cpa_bench_v0_1.jsonl)) was drafted by AI agents and arithmetic-checked, but **has not been reviewed or signed off by a CPA.** Some items involve genuine professional judgment (e.g. lease classification, ASC 606 timing, audit-risk calls) where a wrong gold label would corrupt scores. Treat it as a *draft to be reviewed*, not an answer key.
-- **The judge-validation labels are synthetic.** The judge-eval seed ([`data/judge_eval_seed.jsonl`](data/judge_eval_seed.jsonl)) uses answers whose correctness *we* assigned, not human-labeled real model outputs. The published human-vs-judge agreement number (the metric that makes `llm_judge` scores trustworthy) **does not exist yet** — see [`PLAN.md`](PLAN.md) Phase 3.
-- **No model results have been published.** The harness runs, but no leaderboard here reflects a real, reviewed run.
-- **FinanceBench is not yet incorporated.** It is the intended foundation, but its dataset is **CC BY-NC** and will be added only with proper attribution and licensing — see [Attribution](#attribution).
-- **Licensing is not finalized.** Until a `LICENSE` is added, default copyright applies. The *intent* is an open project; see [License](#license).
-
-In short: the **scaffolding and methodology are real and runnable**; the **dataset and results are not yet validated**. Contributions from accountants, auditors, and educators — especially gold-answer review — are exactly what this project needs.
+![Python](https://img.shields.io/badge/python-3.10%2B-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+![Tests](https://img.shields.io/badge/tests-passing-brightgreen)
+![Status](https://img.shields.io/badge/status-pre--release%20v0.x-orange)
 
 ---
 
-## Mission
+## Why this exists
 
-To give the accounting profession an honest, public, and continually updated map of what AI can and cannot do across real accounting workflows — and to use that map to help accountants become *more* capable, not less relevant.
+The accounting profession is deciding right now how to meet AI, and the easy posture is avoidance: treat it as a compliance headache or wait it out. That leaves accountants unprepared for tools that are already entering their workflows. The honest alternative is to look directly at what these models can and cannot do on real accounting work, and to measure it in public so claims (hype or fear) can be checked against evidence. CPA-Bench is that measuring instrument: a public, role-based map of where AI is already reliable, where it fails, and where a human has to stay in the loop.
 
-A benchmark is the vehicle. The destination is a profession that meets AI with clear eyes: knowing where these tools are already trustworthy, where they fail, where a human must stay in the loop, and what skills are worth building now.
+## What it measures
 
----
+The current task set, [`data/cpa_bench_v0_1.jsonl`](data/cpa_bench_v0_1.jsonl), holds **32 tasks split evenly across four accounting roles, 8 tasks each**:
 
-## Motivation
-
-I am an accounting PhD student, and I believe the profession is at a hinge moment.
-
-When earlier technological waves arrived, accounting — both the practice and the academy — too often met them late and defensively. We risk doing it again with AI: treating it as a threat to be managed, a compliance problem, or something to quietly wait out. That posture leaves accountants unprepared, and an unprepared profession is one that gets *done to* rather than one that shapes its own future.
-
-I want the opposite. **I don't want accountants to be caught flat-footed by AI. I want them to lead with it.**
-
-I believe AI can make accountants genuinely better — and the job genuinely more enjoyable — by taking on the mechanical and freeing people for the parts of the work that require judgment, skepticism, communication, and ethics. More than that, I believe AI can advance the things accounting exists to do in the first place:
-
-- **Inform investors** with clearer, faster, more complete information.
-- **Help people and organizations make better financial decisions.**
-- **Create transparency and accountability** — the entire reason the profession holds public trust.
-
-Every one of those goals can be *improved* with AI, not eroded by it. But that only happens if we look directly at the technology and measure it honestly — its strengths *and* its failure modes — instead of looking away.
-
-So the purpose of CPA-Bench is twofold:
-
-1. **Increase transparency.** Make the real capabilities and limits of AI on accounting work visible, measurable, and public — so claims (in either direction: hype or fear) can be checked against evidence.
-2. **Inspire preparation.** Show accountants, students, educators, and firms concretely *how* AI fits into their workflows, where it helps, where it must be supervised, and how to build the skills to work alongside it.
-
-This is an optimistic project with a demanding standard: optimism about what the profession can become, paired with rigor about what the tools can actually do today.
-
----
-
-## What CPA-Bench measures
-
-FinanceBench answers questions *from* financial statements. CPA-Bench asks whether AI can do the work that *produces and audits* those statements — across the roles a real accounting function contains.
-
-| Layer | Example tasks | Role lens |
+| Role | Complexity tier | Example tasks |
 |---|---|---|
-| **Foundational** (from FinanceBench) | Statement analysis, ratios, metric extraction | Analyst |
-| **Bookkeeping** | Classify transactions, generate double-entry journal entries, post to the ledger | Bookkeeper |
-| **Period-End Close** | Accruals, deferrals, depreciation, trial balance → financial statements | Staff Accountant |
-| **Compliance & Judgment** | GAAP/IFRS application, revenue recognition (ASC 606), error and fraud-indicator detection | Controller |
-| **Multi-Step / Agentic** | Process transaction batches over months, bank and intercompany reconciliation, consolidation | Controller / Auditor |
-| **Assurance** | Sampling, risk assessment, variance and analytical review | Auditor |
+| **Bookkeeper** | foundational | double-entry journal entries, ledger posting, transaction classification, normal balances |
+| **Staff accountant** | period_close | prepaid/accrual deferrals, straight-line depreciation, accrued interest and wages, multi-step net-income adjustment |
+| **Controller** | compliance | FIFO/LIFO/weighted-average cost flow, ASC 606 revenue timing, ASC 842 lease classification, capitalize-vs-expense judgment |
+| **Auditor** | assurance | misstatement projection, analytical/variance review, DSO, assertion identification, fraud red-flag and inherent-risk judgment |
 
-Each task is designed to test not just *can the model get the number*, but *can it reason through the procedure, apply the right standard, and show its work the way a trustworthy professional would.*
+A small four-task sample set ([`data/sample_tasks.jsonl`](data/sample_tasks.jsonl)) adds an `analyst` role and exists to exercise the harness.
 
----
+Each task is self-describing: it carries the grading method it should be scored with, so the runner stays simple and dispatches to the right scorer. Four scorers exist:
 
-## Why a benchmark, specifically
+- **`numeric`** (18 of the 32 tasks): parses the model's number with accounting-aware handling (dollar signs, parentheses-as-negative, percentages, comma separators) and compares against gold within a relative tolerance, default 1%.
+- **`mcq`** (8 tasks): matches the chosen letter, tolerating `b` vs `b) ...` formatting.
+- **`exact`** (2 tasks): normalized string match (case, whitespace, trailing period).
+- **`llm_judge`** (4 tasks): a strong model grades open-ended judgment answers against the gold answer and a gold rationale.
 
-- **It makes the conversation evidence-based.** "AI can/can't do accounting" becomes a measurable claim instead of a vibe.
-- **It's a curriculum signal.** Where models reliably succeed and reliably fail tells students and firms where to invest human skill.
-- **It's a transparency instrument.** Public tasks, public methodology, public results — the same values accounting asks of the companies it reports on.
-- **It's extensible.** The profession is broad; a modular, role-based design lets practitioners and academics contribute the tasks they know best.
+## How it works
 
----
+```
+tasks (.jsonl, self-describing)
+        |
+        v
+   runner  ──>  model client (OpenRouter, one credential reaches every model)
+        |              |
+        |          raw output  ──>  FINAL ANSWER: extraction
+        v
+   scorer dispatch by eval_method
+        |
+   ┌────┴───────────────┬──────────┬───────────────┐
+ numeric              exact       mcq           llm_judge ──> judge model
+ (tolerance,                                                  (same credential)
+  parens-as-neg)
+        |
+        v
+  leaderboard.md  (accuracy + real per-model cost in USD)  +  scores.jsonl  +  raw/<model>/<task>.json
+```
 
-## Running the benchmark (v0 harness)
+Every model and the judge are reached through a single `OPENROUTER_API_KEY`. The runner writes one JSON record per call before aggregating, so a crash loses nothing. Cost is read from OpenRouter's reported per-call usage and rolled up per model, which makes the leaderboard a cost-vs-quality view rather than accuracy alone.
 
-The evaluation harness lives in [`cpa_bench/`](cpa_bench/). You give it a list of
-models and a set of tasks, and it runs and scores them — reaching **every model,
-and the grader, through a single OpenRouter credential**. Each task is
-self-describing: it carries how it should be graded (`eval_method`), so the
-runner stays simple.
+## Judge validation
+
+Open-ended scores are only as trustworthy as the judge behind them, so CPA-Bench grades its own judge. The validation harness ([`cpa_bench/judge_eval.py`](cpa_bench/judge_eval.py)) runs the *same* judge the benchmark ships against a labeled set and reports:
+
+- **Agreement** with the human labels.
+- **Cohen's kappa**, agreement corrected for chance.
+- A **confusion matrix**.
+- **False-pass rate** (the judge accepted a wrong answer, which silently inflates the leaderboard) and **false-fail rate**, sliced by accounting role and complexity.
+
+False-pass is reported first because it is the dangerous error: a judge that rubber-stamps wrong answers makes every model look better than it is. A benchmark that publishes its judge's reliability is more trustworthy than one that asks you to assume it, and re-validation is expected whenever the judge model or prompt changes.
+
+The seed set ([`data/judge_eval_seed.jsonl`](data/judge_eval_seed.jsonl)) is 12 synthetic items (answers whose correctness we assigned, including subtly wrong ones) so the pipeline runs today. The real validation set will be CPA-labeled real model answers, produced via the `judge-prep` command below.
+
+## Quickstart
 
 ```bash
 pip install -r requirements.txt
-export OPENROUTER_API_KEY=sk-or-...        # the only credential you need
+
+# Copy the env template and paste your key (one credential reaches every model + the judge):
+cp .env.example .env        # then edit OPENROUTER_API_KEY=sk-or-...
+# or: export OPENROUTER_API_KEY=sk-or-...
 ```
 
-**Testing protocol — built in, so you never fire a full run just to check plumbing:**
-
 ```bash
-# 1. Full pipeline offline — no network, no key, no cost. Exercises the
-#    runner, every scorer, and the leaderboard via a mock client.
-python -m cpa_bench.cli run --tasks data/sample_tasks.jsonl --dry-run
+# 1. Full pipeline offline (no network, no key, no cost). Exercises the runner,
+#    every scorer, and the leaderboard through a mock client.
+python -m cpa_bench.cli run --tasks data/cpa_bench_v0_1.jsonl --dry-run
 
-# 2. Cheap real smoke test — first 2 tasks against the real models/judge.
-python -m cpa_bench.cli run --tasks data/sample_tasks.jsonl --limit 2
+# 2. Cheap real smoke test: first 2 tasks against the real models and judge.
+python -m cpa_bench.cli run --tasks data/cpa_bench_v0_1.jsonl --limit 2
 
 # 3. Full run.
 python -m cpa_bench.cli run --models configs/models.yaml \
-    --tasks data/sample_tasks.jsonl --out results/run-001
-
-# Offline unit tests (scorers + end-to-end):
-python tests/test_pipeline.py        # or: python -m pytest -q
+    --tasks data/cpa_bench_v0_1.jsonl --out results/run-001
 ```
 
-Outputs land in the `--out` directory: `raw/<model>/<task>.json` (one record per
-call, so a crash loses nothing), `scores.jsonl`, and a `leaderboard.md` with
-accuracy and **real per-model cost** (OpenRouter reports usage cost per call).
+Outputs land in the `--out` directory: `raw/<model>/<task>.json` (one record per call), `scores.jsonl`, and `leaderboard.md`. Configure the model list, judge, and concurrency in [`configs/models.yaml`](configs/models.yaml).
 
-Configure the run in [`configs/models.yaml`](configs/models.yaml) — just the
-model list, the judge, and concurrency. Sample tasks in
-[`data/sample_tasks.jsonl`](data/sample_tasks.jsonl) already cover four grading
-methods (`numeric`, `exact`, `mcq`, `llm_judge`) across four accounting roles.
-
-**Roughly what a run costs.** Cost is dominated by how much context each task
-carries. Against the FinanceBench 150-question subset with the gold *evidence
-excerpt* supplied (~1.4K tokens of context each), a full run on an Opus-tier
-model (~$5/$25 per 1M input/output tokens) is on the order of **a few dollars**.
-Feeding entire source filings instead (long-context mode, ~100K tokens each)
-pushes the same run toward **$50–150**. Start with the cheap evidence mode while
-building the harness; the `--dry-run` and `--limit` modes above keep iteration
-free or near-free.
-
-**Validating the judge.** Open-ended (`llm_judge`) scores are only as trustworthy
-as the judge behind them, so the harness can grade the judge against human labels:
+Validate the judge, and build a CPA labeling template from a real run:
 
 ```bash
 # Score the deployed judge on a labeled set -> agreement, Cohen's kappa,
-# confusion matrix, and the false-pass rate (how often it accepts a wrong answer).
+# confusion matrix, false-pass / false-fail rates (sliced by role + complexity).
 python -m cpa_bench.cli judge-eval --items data/judge_eval_seed.jsonl --out results/judge
 
-# Build a labeling template from a real run, for a CPA to mark correct/incorrect:
+# Turn a completed run into a labeling template for a CPA to mark correct/incorrect.
 python -m cpa_bench.cli judge-prep --run results/run-001/scores.jsonl \
     --tasks data/cpa_bench_v0_1.jsonl --out data/judge_eval_to_label.jsonl
 ```
 
-The seed set ([`data/judge_eval_seed.jsonl`](data/judge_eval_seed.jsonl)) is synthetic
-(answers whose correctness we know, including *subtly* wrong ones) so you can run it
-today; the real validation set is CPA-labeled real model answers (PLAN Phase 3). The
-metric that matters most is **false-pass** — a judge that rubber-stamps wrong answers
-silently inflates the leaderboard, so it's reported first.
+Offline tests (no key, no network):
 
-## Roadmap (high level)
+```bash
+python -m pytest -q              # or: python tests/test_pipeline.py
+```
+
+## Example output
+
+> **Illustrative format, not real results.** No real-model panel has been run or published yet. The numbers below show what the harness emits, not measured performance.
+
+Leaderboard (`leaderboard.md`):
+
+| Model | Accuracy | Correct/N | Cost (USD) | Errors |
+|---|---|---|---|---|
+| model-a | 84.4% | 27/32 | $0.0412 | 0 |
+| model-b | 78.1% | 25/32 | $0.0190 | 0 |
+| model-c | 71.9% | 23/32 | $0.0061 | 0 |
+
+Judge validation report (`judge_report.md`), shown here against the 12-item synthetic seed:
+
+```
+Agreement with humans: 100.0%   Cohen's kappa: 1.000
+False-pass (accepted a wrong answer): 0  (0.0% of human-incorrect items)
+False-fail (rejected a correct answer): 0  (0.0% of human-correct items)
+```
+
+That 100% / kappa 1.000 is on synthetic seed data, not a real CPA-labeled set, and should not be read as a validated trust number.
+
+## Roadmap
 
 Detailed planning lives in [`PLAN.md`](PLAN.md). In brief:
 
-1. **Setup & replication** — establish repo structure; bring in the FinanceBench open subset as a foundation and attribute it properly.
-2. **Accounting-specific dataset** — extend the schema (role, complexity, required reasoning, expected outputs) and build the first 100–300 expert-reviewed tasks across the layers above.
-3. **Evaluation framework** — exact-match on numbers/entries, rubric- and LLM-judge scoring, and an agentic mode with tool use (calculation, ledger queries).
-4. **Baselines & publication** — run frontier and open models; publish results and methodology.
-5. **Launch & iteration** — open contribution, external validation by practicing accountants and academics, and expansion toward long-horizon, multi-period tasks.
+- **CPA-reviewed gold answers.** Replace AI-drafted golds with a 50 to 150 task set reviewed and signed off by credentialed accountants, with reviewer provenance recorded.
+- **FinanceBench foundation, attributed correctly.** Fold in the FinanceBench open subset as the analyst layer under its CC BY-NC terms, with evidence-mode and long-context-mode runs.
+- **A published judge-agreement number.** Build a real CPA-labeled validation set, publish judge kappa sliced by role and complexity, and set a threshold below which a task type is not judge-graded.
+- **First real model panel.** Run frontier and open models, publish results and methodology sliced by role and complexity, not one aggregate score.
+- **Cost-quality frontier view.** Report cost per correct answer and accuracy-per-dollar, and plot the Pareto frontier so a cheaper model that ties a pricier one is the headline.
+- **Scoring robustness and an agentic layer (later).** Journal-entry canonicalization, multi-answer grading, and multi-step tasks with tool use.
 
----
+## Caveats and limitations
 
-## Attribution
+This is an early, in-progress project built in the open. Please do not treat anything here as a validated benchmark yet.
 
-CPA-Bench builds directly on **FinanceBench** by Patronus AI. We gratefully acknowledge that work as the foundation this project extends. FinanceBench citation and licensing details will be reproduced here as the dataset is incorporated, and CPA-Bench will comply with the terms of any upstream data it uses.
+- **Gold answers are AI-authored and not yet expert-reviewed.** The `v0.1` task set was drafted by AI and arithmetic-checked, but no CPA has signed off. Some items involve genuine professional judgment (lease classification, ASC 606 timing, audit-risk calls) where a wrong gold label would corrupt scores. Treat it as a draft to be reviewed, not an answer key.
+- **The judge-validation labels are synthetic.** The seed set uses answers whose correctness we assigned, not human-labeled real model outputs. The published human-vs-judge agreement number that would make `llm_judge` scores trustworthy does not exist yet.
+- **No model results have been published.** The harness runs, but no leaderboard here reflects a real, reviewed run.
+- **FinanceBench is not yet incorporated.** It is the intended foundation, but its dataset is CC BY-NC and will be added only with proper attribution and licensing.
 
-> Islam et al., *FinanceBench: A New Benchmark for Financial Question Answering.* Patronus AI. https://github.com/patronus-ai/financebench
-
-*(Full BibTeX and license notes to be added in `ATTRIBUTION.md`.)*
-
----
-
-## License
-
-To be finalized. The intent is a permissive license for original code, with dataset licensing chosen to (a) respect upstream FinanceBench terms and (b) keep CPA-Bench as open and useful to the profession as possible. See `LICENSE` *(coming)*.
-
----
+In short: the scaffolding and methodology are real and runnable; the dataset and results are not yet validated.
 
 ## Disclaimer
 
-CPA-Bench is a research benchmark. It does **not** provide accounting, audit, tax, or investment advice, and model outputs measured here should not be relied on for real financial reporting. All data is intended to be public or synthetic; no confidential or sensitive client information belongs in this repository.
+CPA-Bench is a research benchmark. It does not provide accounting, audit, tax, or investment advice, and model outputs measured here should not be relied on for real financial reporting. All data is intended to be public or synthetic; no confidential client information belongs in this repository.
 
----
+## Attribution
 
-## Get involved
+CPA-Bench builds on **FinanceBench** by Patronus AI, gratefully acknowledged as the foundation this project extends. Full citation and license notes will be reproduced as the dataset is incorporated.
 
-This project is being built in the open by someone who believes the accounting profession's best response to AI is to engage it directly, measure it honestly, and prepare deliberately. If you are an accountant, auditor, educator, student, or researcher and that resonates — contribution guidelines are on the way, and your expertise is wanted.
+> Islam et al., *FinanceBench: A New Benchmark for Financial Question Answering.* Patronus AI. https://github.com/patronus-ai/financebench
+
+## Author
+
+Built by Patrick Neyland, an accounting PhD-track academic working in applied AI. [Neyland Solutions](https://neylandsolutions.com).
