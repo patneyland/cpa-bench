@@ -139,7 +139,10 @@ Three consequences of building it that way:
 
 Also planned: FinanceBench's open subset folded in as the analyst layer under its CC BY-NC terms, a published judge-agreement number from CPA labels, and a cost-quality frontier rather than a single-axis ranking.
 
-Detailed planning lives in [`PLAN.md`](PLAN.md), which predates the results above and is being rewritten around them.
+Current design, the decisions behind it and what is still open are in
+[`ARCHITECTURE.md`](ARCHITECTURE.md). [`PLAN.md`](PLAN.md) predates the results
+above and is being rewritten around them; where the two disagree, ARCHITECTURE.md
+is current.
 
 ## Caveats and limitations
 
