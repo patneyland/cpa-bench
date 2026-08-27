@@ -48,6 +48,14 @@ def run(
     def work(model: str, task: Task) -> dict:
         prompt = build_prompt(task)
         completion = client.complete(model, cfg.system_prompt, prompt)
+        # A provider can return HTTP 200 with empty content (seen with
+        # reasoning models that spend their output budget and emit nothing).
+        # That is an infrastructure failure, not a wrong answer: scoring it
+        # as incorrect silently understates the model.
+        if not completion.error and not (completion.text or "").strip():
+            completion.error = (
+                f"empty completion (output_tokens={completion.output_tokens})"
+            )
         if completion.error:
             sc = None
             correct = False

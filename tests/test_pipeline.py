@@ -45,6 +45,36 @@ def test_exact_scorer_normalizes():
     assert not score(t, "FINAL ANSWER: utilities expense").correct
 
 
+def test_exact_scorer_accepts_alternatives():
+    """A right answer must not fail on phrasing. All three models answered
+    bk_owner_drawing_classify correctly in run-001 and all three were scored
+    wrong because gold said "Owner's drawings"."""
+    t = _task(
+        eval_method="exact",
+        gold_answer="Owner's drawings",
+        eval_params={"accepted": ["Owner's Drawing", "Owner's Withdrawals"]},
+    )
+    assert score(t, "FINAL ANSWER: Owner's drawings").correct
+    assert score(t, "FINAL ANSWER: Owner's Drawing").correct
+    assert score(t, "FINAL ANSWER: owner's withdrawals.").correct
+    assert not score(t, "FINAL ANSWER: Cash").correct
+    # GPT-5 answered with a typographic apostrophe in run-001 and was
+    # scored wrong for it.
+    assert score(t, "FINAL ANSWER: Owner’s Withdrawals").correct
+
+
+def test_empty_completion_is_an_error_not_a_miss():
+    """Gemini returned 387 output tokens and empty content on one run-001
+    task. That is an infrastructure failure, not a wrong answer."""
+    cfg = RunConfig(models=["m"], judge="j")
+    tasks = [_task(eval_method="mcq", gold_answer="a")]
+    out = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_tmp_empty")
+    summary = run(cfg, tasks, MockClient(canned=""), out)
+    assert summary["m"]["errors"] == 1
+    assert summary["m"]["correct"] == 0
+    import shutil; shutil.rmtree(out, ignore_errors=True)
+
+
 def test_mcq_scorer():
     t = _task(eval_method="mcq", gold_answer="a")
     assert score(t, "FINAL ANSWER: a").correct

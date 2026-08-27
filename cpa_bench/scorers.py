@@ -69,11 +69,39 @@ def score_numeric(task: Task, model_text: str) -> Score:
     return Score(ok, f"got={got} gold={gold} rel_tol={tol}", ans)
 
 
+# Models emit typographic punctuation ("Owner’s") where gold answers are
+# written with ASCII ("Owner's"). That is an encoding difference, never an
+# accounting one, so it is folded out before comparison.
+_PUNCT_FOLD = str.maketrans({
+    "‘": "'", "’": "'", "ʼ": "'", "´": "'",
+    "“": '"', "”": '"',
+    "‐": "-", "‑": "-", "‒": "-", "–": "-",
+    "—": "-", "−": "-",
+    " ": " ",
+})
+
+
+def _norm_exact(s: str) -> str:
+    s = (s or "").translate(_PUNCT_FOLD)
+    return re.sub(r"\s+", " ", s.strip().lower().rstrip("."))
+
+
 def score_exact(task: Task, model_text: str) -> Score:
+    """Exact match against the gold answer or any accepted alternative.
+
+    Accounting account names have several correct written forms ("Owner's
+    Drawings" = "Owner's Withdrawals"), so a task may list the alternatives
+    it will accept in eval_params["accepted"]. The gold answer is always
+    accepted; the list only ever widens what counts as correct. Without
+    this, the grader punishes a right answer for its phrasing."""
     ans = extract_final_answer(model_text)
-    norm = lambda s: re.sub(r"\s+", " ", s.strip().lower().rstrip("."))
-    ok = norm(ans) == norm(task.gold_answer)
-    return Score(ok, f"got={ans!r} gold={task.gold_answer!r}", ans)
+    accepted = [task.gold_answer] + list(task.eval_params.get("accepted", []))
+    normed = {_norm_exact(a) for a in accepted}
+    ok = _norm_exact(ans) in normed
+    detail = f"got={ans!r} gold={task.gold_answer!r}"
+    if len(accepted) > 1:
+        detail += f" (+{len(accepted) - 1} accepted alt)"
+    return Score(ok, detail, ans)
 
 
 def score_mcq(task: Task, model_text: str) -> Score:
