@@ -13,9 +13,19 @@ env/
 /scratch/
 /vectorstores/
 
-# Run outputs (raw/, scores.jsonl, leaderboard.md). Publish curated results
-# deliberately elsewhere; don't commit every local run.
-/results/
+# Run outputs. Scratch runs stay out; a curated, published run is committed
+# deliberately by un-ignoring it below. raw/ is never committed - the model
+# text that matters is already carried in scores.jsonl.
+/results/*
+
+# Published runs (each added here on purpose, not by default).
+!/results/run-001/
+/results/run-001/*
+!/results/run-001/leaderboard.md
+!/results/run-001-rescored/
+/results/run-001-rescored/*
+!/results/run-001-rescored/leaderboard.md
+!/results/run-001-rescored/scores.jsonl
 
 # OS / editor
 .DS_Store
